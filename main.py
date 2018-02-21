@@ -37,6 +37,7 @@ def one_hot(labels, output_size=10):
 def main():
     args = parse_args()
 
+    # Params
     epochs = args.epoch
     sample_output = args.sample_output
     sample_nums = args.sample_nums
@@ -44,8 +45,12 @@ def main():
 
     sample_interval = epochs // sample_nums
 
+    # Hyperparams
     learning_rate_d = 1e-3
     learning_rate_g = 1e-3
+
+    # Class names 
+    class_names = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
 
     # CIFAR dataset
     train_dataset = datasets.CIFAR10("./data", train=True, transform=transforms.ToTensor(), download=True)
@@ -73,6 +78,7 @@ def main():
     _i = 1
     for epoch in range(epochs):
         for i, (images, labels) in enumerate(train_loader):
+            current_batch_size = len(images)
             print("Training batch: %d / %d" % (i, total_batches), end="\r")
             sys.stdout.flush()
 
@@ -88,8 +94,8 @@ def main():
             outputs_d = _d(images)
             real_loss = criterion_d(outputs_d, labels)
 
-            noise = Variable(torch.cuda.FloatTensor(batch_size, 3, 32, 32).normal_())
-            fake_labels = np.zeros(batch_size) + 10
+            noise = Variable(torch.cuda.FloatTensor(current_batch_size, 3, 32, 32).normal_())
+            fake_labels = np.zeros(current_batch_size) + 10
             fake_labels_d = Variable(torch.from_numpy(fake_labels).long().cuda())
             
             fake_images = _g(labels_g, noise)
@@ -101,9 +107,9 @@ def main():
             optimizer_d.step()
 
             # Train G network
-            noise = Variable(torch.cuda.FloatTensor(batch_size, 3, 32, 32).normal_())
+            noise = Variable(torch.cuda.FloatTensor(current_batch_size, 3, 32, 32).normal_())
             
-            fake_labels = np.random.randint(0, 10, batch_size)      
+            fake_labels = np.random.randint(0, 10, current_batch_size)      
             labels_fake_onehot = torch.from_numpy(one_hot(fake_labels)).float().cuda()
             labels_fake_onehot = Variable(labels_fake_onehot)
 
@@ -145,7 +151,7 @@ def main():
         if _i == sample_interval:
             _i = 1
             print("Generating images: ", end="\r")
-            generate_batch_images(_g, 5, start=0, end=9, prefix="training-epoch-%d" % (epoch + 1), figure_path=sample_output)
+            generate_batch_images(_g, 5, start=0, end=9, prefix="training-epoch-%d" % (epoch + 1), figure_path=sample_output, labels=class_names)
             sys.stdout.flush()
             print("Generated images for epoch %d" % (epoch + 1))
         else:
