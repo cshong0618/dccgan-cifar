@@ -24,7 +24,7 @@ def generate_batch_images(_g, batch_size, start=0, end=9, prefix="", suffix="", 
         noise = Variable(torch.cuda.FloatTensor(batch_size, depth, height, width).normal_())
 
         label = np.full((batch_size, 1), n)
-        label_one_hot = (np.arange(11) == label[:,None]).astype(np.float)
+        label_one_hot = (np.arange(10) == label[:,None]).astype(np.float)
         label_one_hot = torch.from_numpy(label_one_hot)
         label_one_hot = Variable(label_one_hot.cuda())
 
@@ -38,9 +38,6 @@ def generate_batch_images(_g, batch_size, start=0, end=9, prefix="", suffix="", 
         for i, img in enumerate(im_outputs):
             trans = transforms.ToPILImage()
             data = img.data.cpu()
-
-            if normalized:
-                data = data / 2 + 0.5
 
             im = trans(data)
             im.save(os.path.join(figure_path, "%s-%s-%d-%s.png" % (prefix, name, i, suffix)))
