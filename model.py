@@ -41,7 +41,6 @@ class D(nn.Module):
         self.fc_out = nn.Sequential(
             nn.Linear(8 * 11 * 11, 32),
             nn.Linear(32, self.output_size),
-            nn.Softmax()
         )
 
     def forward(self, X):
@@ -126,22 +125,5 @@ class CCNN(nn.Module):
         noise = fc_out + noise
         decoded = self.decoder(noise)
         out = self.encoder(decoded)
-
-        std = torch.cuda.FloatTensor(out.size(0), self.d, self.w, self.h)
-        std[:,0,:,:] += 0.247
-        std[:,1,:,:] += 0.243
-        std[:,2,:,:] += 0.261
-
-        mean = torch.cuda.FloatTensor(out.size(0), self.d, self.w, self.h)
-        mean[:,0,:,:] += 0.4914
-        mean[:,1,:,:] += 0.4822
-        mean[:,2,:,:] += 0.4465
-
-        out = (out - Variable(mean)) / Variable(std)
-
-
-        #out[:,0,:,:] = out[:,0,:,:].clone() * 0.247 + 0.4914
-        #out[:,1,:,:] = out[:,1,:,:].clone() * 0.243 + 0.4822
-        #out[:,2,:,:] = out[:,2,:,:].clone() * 0.261 + 0.4465
 
         return out

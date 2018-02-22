@@ -51,7 +51,7 @@ def main():
 
     # Hyperparams
     learning_rate_d = 1e-3
-    learning_rate_g = 1e-4
+    learning_rate_g = 1e-3
 
     # Class names 
     class_names = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
@@ -87,6 +87,7 @@ def main():
     for epoch in range(epochs):
         for i, (images, labels) in enumerate(train_loader):
             current_batch_size = len(images)
+            fake_batch_size = max(1, int(current_batch_size / 8))
             print("Training batch: %d / %d" % (i, total_batches), end="\r")
             sys.stdout.flush()
 
@@ -105,19 +106,31 @@ def main():
             #print(outputs_d)
 
             # Generate fake labels
-            noise = Variable(torch.cuda.FloatTensor(current_batch_size, 3, 32, 32).normal_())
-            fake_labels = np.zeros(current_batch_size) + 10
+            noise = Variable(torch.cuda.FloatTensor(fake_batch_size, 3, 32, 32).normal_())
+            fake_labels = np.zeros(fake_batch_size) + 10
             fake_labels_d = Variable(torch.from_numpy(fake_labels).long().cuda())
             
             #print(fake_labels)
             #input()
            
             # Generate fake images and classify
-            fake_labels_g = np.random.randint(0, 10, current_batch_size)      
+            fake_labels_g = np.random.randint(0, 10, fake_batch_size)      
             labels_fake_onehot = torch.from_numpy(one_hot(fake_labels_g)).float().cuda()
             labels_fake_onehot = Variable(labels_fake_onehot)
             fake_images = _g(labels_fake_onehot, noise)
             
+            std = torch.cuda.FloatTensor(fake_batch_size, 3, 32, 32)
+            std[:,0,:,:] += 0.247
+            std[:,1,:,:] += 0.243
+            std[:,2,:,:] += 0.261
+
+            mean = torch.cuda.FloatTensor(fake_batch_size, 3, 32, 32)
+            mean[:,0,:,:] += 0.4914
+            mean[:,1,:,:] += 0.4822
+            mean[:,2,:,:] += 0.4465
+
+            fake_images = (fake_images - Variable(mean)) / Variable(std)
+
             fake_outputs= _d(fake_images.detach())
 
             # Calculate loss
@@ -140,7 +153,20 @@ def main():
             fake_labels = Variable(fake_labels.cuda())
 
             images_g = _g(labels_fake_onehot, noise)
-            truth = _d(images_g)
+
+            std = torch.cuda.FloatTensor(current_batch_size,3, 32, 32)
+            std[:,0,:,:] += 0.247
+            std[:,1,:,:] += 0.243
+            std[:,2,:,:] += 0.261
+
+            mean = torch.cuda.FloatTensor(current_batch_size, 3, 32, 32)
+            mean[:,0,:,:] += 0.4914
+            mean[:,1,:,:] += 0.4822
+            mean[:,2,:,:] += 0.4465
+
+            images_g = (images_g - Variable(mean)) / Variable(std)
+
+            truth = _d(images_g.detach())
 
             loss_g = criterion_g(truth, fake_labels)
             loss_g.backward()
