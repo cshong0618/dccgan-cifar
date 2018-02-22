@@ -22,6 +22,7 @@ def parse_args():
     parser.add_argument("--sample_output", help="Output of in-training samples", default="./training")
     parser.add_argument("--sample_nums", help="Number of times to produce in-training samples", type=int, default=100)
     parser.add_argument("--batch_size", help="Batch size", type=int, default=32)
+    parser.add_argument("--gpu", help="Which GPU to use", type=int, default=0)
 
     args = parser.parse_args(sys.argv[1:])
     return args
@@ -42,6 +43,7 @@ def main():
     sample_output = args.sample_output
     sample_nums = args.sample_nums
     batch_size = args.batch_size
+    gpu_n = args.gpu
 
     sample_interval = epochs // sample_nums
 
@@ -66,10 +68,10 @@ def main():
 
     # Build model
     _d = model.D(3, 11)
-    _d.cuda()
+    _d.cuda(gpu_n)
 
     _g = model.CCNN(input_class=11)
-    _g.cuda()
+    _g.cuda(gpu_n)
 
     # Loss and optimizer
     criterion_d = nn.CrossEntropyLoss().cuda()
