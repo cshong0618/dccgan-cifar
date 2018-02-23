@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
+import torchvision
 
 from torch.autograd import Variable
 
@@ -45,7 +46,7 @@ def main():
     batch_size = args.batch_size
     gpu_n = args.gpu
 
-    pretrain_epochs = max(25, int(epochs / 10))
+    pretrain_epochs = min(25, int(epochs / 10))
 
     torch.cuda.set_device(gpu_n)
 
@@ -71,7 +72,10 @@ def main():
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
 
     # Build model
-    _d = model.D2(3, 11)
+    #_d = model.D2(3, 11)
+    _d = torchvision.models.AlexNet(11)
+    for params in _d.features.parameters():
+        params.requires_grad = False
     _d.cuda()
 
     _g = model.CCNN()
@@ -123,8 +127,8 @@ def main():
             correct_d += (predicted.cpu() == labels).sum()
         
         print("Pretrain Epoch [%d/%d], Iter [%d/%d] D loss:%.5f D accuracy: %.2f%%" % (
-            pretrain_epochs + 1,
-            epochs,
+            epoch + 1,
+            pretrain_epochs,
             i + 1,
             len(train_dataset) // batch_size,
             real_loss.data[0],

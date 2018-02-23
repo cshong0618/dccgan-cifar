@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
+import torchvision
 
 
 class D(nn.Module):
@@ -74,6 +75,16 @@ class D2(nn.Module):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
+
+def resnet(out_features=10):
+    model_conv = torchvision.models.resnet18(pretrained=True)
+    for param in model_conv.parameters():
+        param.requires_grad = False
+
+    # Parameters of newly constructed modules have requires_grad=True by default
+    num_ftrs = model_conv.fc.in_features
+    model_conv.fc = nn.Linear(num_ftrs, out_features)
+    return model_conv
 
 class CCNN(nn.Module):
     def __init__(self, input_class=10, dimen=(32, 32, 3)):
