@@ -60,7 +60,7 @@ def main():
     class_names = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
 
     # CIFAR dataset
-    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))]) # https://github.com/kuangliu/pytorch-cifar/issues/19
+    transform = transforms.Compose([transforms.CenterCrop(28), transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))]) # https://github.com/kuangliu/pytorch-cifar/issues/19
     #transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     #transform = transforms.Compose([transforms.ToTensor()])
 
@@ -73,9 +73,13 @@ def main():
 
     # Build model
     #_d = model.D2(3, 11)
-    _d = torchvision.models.AlexNet(11)
+    _d = torchvision.models.alexnet(pretrained=False, num_classes=11)
     for params in _d.features.parameters():
         params.requires_grad = False
+
+    for params in _d.classifier.parameters():
+        params.requires_grad = True
+
     _d.cuda()
 
     _g = model.CCNN()
@@ -83,7 +87,7 @@ def main():
 
     # Loss and optimizer
     criterion_d = nn.CrossEntropyLoss().cuda()
-    optimizer_d = torch.optim.Adam(_d.parameters(), lr=learning_rate_d)
+    optimizer_d = torch.optim.Adam(_d.classifier.parameters(), lr=learning_rate_d)
 
     criterion_g = nn.CrossEntropyLoss().cuda()
     optimizer_g = torch.optim.Adam(_g.parameters(), lr=learning_rate_g)
