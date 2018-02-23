@@ -13,23 +13,14 @@ class D(nn.Module):
 
         self.conv1 = nn.Sequential(
             nn.ZeroPad2d(2),
-            nn.Conv2d(in_channels=self.input_channels, out_channels=4, kernel_size=2, stride=1, padding=1),
-            nn.BatchNorm2d(4),
-            nn.LeakyReLU(0.02, inplace=True),
-            nn.AvgPool2d(2),
-            nn.Dropout2d(p=0.5)
-        )
-
-        self.conv2 = nn.Sequential(
-            nn.ZeroPad2d(2),
-            nn.Conv2d(in_channels=4, out_channels=8, kernel_size=2, stride=1, padding=1),
+            nn.Conv2d(in_channels=self.input_channels, out_channels=8, kernel_size=2, stride=1, padding=1),
             nn.BatchNorm2d(8),
             nn.LeakyReLU(0.02, inplace=True),
             nn.AvgPool2d(2),
             nn.Dropout2d(p=0.5)
         )
 
-        self.conv3 = nn.Sequential(
+        self.conv2 = nn.Sequential(
             nn.ZeroPad2d(2),
             nn.Conv2d(in_channels=8, out_channels=16, kernel_size=2, stride=1, padding=1),
             nn.BatchNorm2d(16),
@@ -38,9 +29,19 @@ class D(nn.Module):
             nn.Dropout2d(p=0.5)
         )
 
+        self.conv3 = nn.Sequential(
+            nn.ZeroPad2d(2),
+            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=2, stride=1, padding=1),
+            nn.BatchNorm2d(32),
+            nn.LeakyReLU(0.02, inplace=True),
+            nn.AvgPool2d(2),
+            nn.Dropout2d(p=0.5)
+        )
+
         self.fc_out = nn.Sequential(
-            nn.Linear(8 * 11 * 11, 32),
-            nn.Linear(32, self.output_size),
+            nn.Linear(16 * 11 * 11, 120),
+            nn.Linear(120, 64),
+            nn.Linear(64, self.output_size),
         )
 
     def forward(self, X):
@@ -92,6 +93,7 @@ class CCNN(nn.Module):
         self.decoder = nn.Sequential(
             nn.ZeroPad2d(2),
             nn.Conv2d(in_channels = self.d, out_channels=32,kernel_size=2, stride=1, padding=1),
+            nn.BatchNorm2d(32),
             nn.LeakyReLU(0.02, inplace=True),
             nn.AvgPool2d(2),
             nn.Dropout2d(0.5),
@@ -103,6 +105,7 @@ class CCNN(nn.Module):
             nn.Dropout2d(0.5),
             nn.ZeroPad2d(2),
             nn.Conv2d(in_channels = 64, out_channels=128,kernel_size=2, stride=1, padding=1),
+            nn.BatchNorm2d(128),            
             nn.LeakyReLU(0.02, inplace=True),
             nn.AvgPool2d(2),
             nn.Dropout2d(0.5)
