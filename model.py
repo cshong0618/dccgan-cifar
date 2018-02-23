@@ -67,13 +67,25 @@ class D2(nn.Module):
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, self.output_size)
 
+        self.features = nn.Sequential(
+            nn.Conv2d(self.input_channels, 6, 5),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2),
+            nn.Conv2d(6, 16, 5),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2)
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Linear(16 * 5 * 5, 120),
+            nn.Linear(120, 84),
+            nn.Linear(84, self.output_size)
+        )
+
     def forward(self, X):
-        x = self.pool(F.relu(self.conv1(X)))
-        x = self.pool(F.relu(self.conv2(x)))
+        x = self.features(X)
         x = x.view(-1, 16 * 5 * 5)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = self.classifier(x)
         return x
 
 def resnet(out_features=10):
@@ -85,6 +97,37 @@ def resnet(out_features=10):
     num_ftrs = model_conv.fc.in_features
     model_conv.fc = nn.Linear(num_ftrs, out_features)
     return model_conv
+
+class TransferD(nn.Module):
+    def __init__(self, features, out_features=11):
+        super(TransferD, self).__init__()
+        self.out_features = out_features
+        self.features = features
+
+        for params in self.features.parameters():
+            params.requires_grad = False
+
+        self.classifier = nn.Sequential(
+            nn.Linear(512, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(4096, 11),
+        )
+
+    def forward(self, X):
+        x = self.features(X)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        return x 
+
+def vgg16(out_features=11):
+    vgg = torchvision.models.vgg16(pretrained=True)
+
+    _d = TransferD(vgg.features, 11)
+    return _d
 
 class CCNN(nn.Module):
     def __init__(self, input_class=10, dimen=(32, 32, 3)):

@@ -46,7 +46,7 @@ def main():
     batch_size = args.batch_size
     gpu_n = args.gpu
 
-    pretrain_epochs = min(25, int(epochs / 10))
+    pretrain_epochs = min(25, int(epochs / 4))
 
     torch.cuda.set_device(gpu_n)
 
@@ -60,7 +60,7 @@ def main():
     class_names = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
 
     # CIFAR dataset
-    transform = transforms.Compose([transforms.CenterCrop(28), transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))]) # https://github.com/kuangliu/pytorch-cifar/issues/19
+    transform = transforms.Compose([transforms.CenterCrop(32), transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))]) # https://github.com/kuangliu/pytorch-cifar/issues/19
     #transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     #transform = transforms.Compose([transforms.ToTensor()])
 
@@ -73,13 +73,7 @@ def main():
 
     # Build model
     #_d = model.D2(3, 11)
-    _d = torchvision.models.alexnet(pretrained=False, num_classes=11)
-    for params in _d.features.parameters():
-        params.requires_grad = False
-
-    for params in _d.classifier.parameters():
-        params.requires_grad = True
-
+    _d = model.vgg16(11)
     _d.cuda()
 
     _g = model.CCNN()
@@ -92,7 +86,7 @@ def main():
     criterion_g = nn.CrossEntropyLoss().cuda()
     optimizer_g = torch.optim.Adam(_g.parameters(), lr=learning_rate_g)
 
-    total_batches = len(train_dataset) // batch_size
+    total_batches = len(train_dataset)
     _i = 1
 
     for epoch in range(pretrain_epochs):
@@ -138,6 +132,8 @@ def main():
             real_loss.data[0],
             (100 * correct_d / total_d)
         ))
+
+    optimizer_d = torch.optim.Adam(_d.classifier.parameters(), lr=learning_rate_d)
 
     for epoch in range(epochs):
         _d.train()
@@ -185,7 +181,7 @@ def main():
             mean[:,0,:,:] += 0.4914
             mean[:,1,:,:] += 0.4822
             mean[:,2,:,:] += 0.4465
-
+            
             fake_images = (fake_images - Variable(mean)) / Variable(std)
             
             fake_outputs= _d(fake_images.detach())
